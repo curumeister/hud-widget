@@ -36,50 +36,31 @@ body {
   overflow: hidden;
 }
 
-/* GLOW */
-.led {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(
-    ellipse at center bottom,
-    rgba(0,240,255,0.15),
-    rgba(108,92,255,0.1),
-    transparent 70%
-  );
-}
-
-/* 🔥 LED CORRIGIDO DE VERDADE */
 .led-line {
   position: absolute;
   bottom: 0;
   left: 0;
-
   width: 100%;
-  height: 3px;
+  height: 4px;
 
   background: linear-gradient(
     90deg,
-    #6c5cff,
     #00f0ff,
     #6c5cff,
     #00f0ff,
-    #6c5cff
+    #6c5cff,
+    #00f0ff
   );
 
-  background-size: 300% 100%;
-
-  animation: ledMove linear infinite;
-  animation-duration: 2.5s;
+  background-size: 200% 100%;
+  animation: ledMove 6s linear infinite;
 }
 
 @keyframes ledMove {
-  from { background-position: -150% 0; }
-  to   { background-position: 150% 0; }
+  from { background-position: 0% 0; }
+  to   { background-position: 200% 0; }
 }
 
-/* TEXT */
 .ticker {
   position: relative;
   width: 100%;
@@ -103,8 +84,9 @@ body {
 .clock {
   position: absolute;
   right: 20px;
-  font-size: 13px;
-  color: #888;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ccc;
 }
 </style>
 </head>
@@ -117,7 +99,6 @@ body {
     <div id="ticker" class="ticker"></div>
     <div id="clock" class="clock"></div>
 
-    <div class="led"></div>
     <div class="led-line"></div>
 
   </div>
@@ -144,7 +125,7 @@ setInterval(() => {
   });
 }, 1000);
 
-/* fetch seguro */
+/* fetch */
 async function safeFetch(url) {
   try {
     const r = await fetch(url);
@@ -152,6 +133,24 @@ async function safeFetch(url) {
   } catch {
     return null;
   }
+}
+
+/* 🔥 TRADUÇÃO MELHORADA */
+function formatWeatherDesc(desc) {
+  const map = {
+    "céu limpo": "Céu limpo",
+    "nuvens dispersas": "Poucas nuvens",
+    "nuvens quebradas": "Nublado",
+    "nublado": "Nublado",
+    "chuva leve": "Chuva leve",
+    "chuva moderada": "Chuva",
+    "chuva forte": "Chuva forte",
+    "trovoada": "Tempestade",
+    "tempestade": "Tempestade"
+  };
+
+  const lower = desc.toLowerCase();
+  return map[lower] || desc.charAt(0).toUpperCase() + desc.slice(1);
 }
 
 /* dados */
@@ -172,15 +171,25 @@ async function loadData() {
     "https://economia.awesomeapi.com.br/json/last/USD-BRL"
   );
 
+  const cny = await safeFetch(
+    "https://economia.awesomeapi.com.br/json/last/CNY-BRL"
+  );
+
   const weatherItems = weather
     .filter(w => w && w.main)
-    .map(w => `🌦 ${w.name} • ${Math.round(w.main.temp)}°C`);
+    .map(w => {
+      const desc = formatWeatherDesc(w.weather[0].description);
+      return `🌦 ${w.name} • ${Math.round(w.main.temp)}°C • ${desc}`;
+    });
 
   const items = [
     ...weatherItems,
+
     crypto?.bitcoin ? `💰 BTC • R$ ${crypto.bitcoin.brl.toLocaleString()}` : null,
     crypto?.ethereum ? `🟣 ETH • R$ ${crypto.ethereum.brl.toLocaleString()}` : null,
-    usd?.USDBRL ? `💵 USD • R$ ${parseFloat(usd.USDBRL.bid).toFixed(2)}` : null
+    usd?.USDBRL ? `💵 USD • R$ ${parseFloat(usd.USDBRL.bid).toFixed(2)}` : null,
+    cny?.CNYBRL ? `🇨🇳 CNY • R$ ${parseFloat(cny.CNYBRL.bid).toFixed(2)}` : null
+
   ].filter(Boolean);
 
   if (items.length) {
@@ -210,7 +219,6 @@ setInterval(() => {
 /* init */
 loadData();
 setInterval(loadData, 1800000);
-
 </script>
 
 </body>
