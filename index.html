@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>HUD Trading</title>
+
+<style>
+body {
+  margin: 0;
+  background: #000;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.hud {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.card {
+  width: 90%;
+  max-width: 900px;
+  height: 70px;
+
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* GLOW */
+.led {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center bottom,
+    rgba(0,240,255,0.15),
+    rgba(108,92,255,0.1),
+    transparent 70%
+  );
+}
+
+/* 🔥 LED CORRIGIDO DE VERDADE */
+.led-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+
+  width: 100%;
+  height: 3px;
+
+  background: linear-gradient(
+    90deg,
+    #6c5cff,
+    #00f0ff,
+    #6c5cff,
+    #00f0ff,
+    #6c5cff
+  );
+
+  background-size: 300% 100%;
+
+  animation: ledMove linear infinite;
+  animation-duration: 2.5s;
+}
+
+@keyframes ledMove {
+  from { background-position: -150% 0; }
+  to   { background-position: 150% 0; }
+}
+
+/* TEXT */
+.ticker {
+  position: relative;
+  width: 100%;
+}
+
+.item {
+  position: absolute;
+  width: 100%;
+  color: #fff;
+
+  opacity: 0;
+  transform: translateX(20px);
+  transition: 0.4s;
+}
+
+.item.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.clock {
+  position: absolute;
+  right: 20px;
+  font-size: 13px;
+  color: #888;
+}
+</style>
+</head>
+
+<body>
+
+<div class="hud">
+  <div class="card">
+
+    <div id="ticker" class="ticker"></div>
+    <div id="clock" class="clock"></div>
+
+    <div class="led"></div>
+    <div class="led-line"></div>
+
+  </div>
+</div>
+
+<script>
+const API_KEY = "46f49c9551bea5305c63071f37f9622d";
+
+const ticker = document.getElementById("ticker");
+const clockEl = document.getElementById("clock");
+
+let state = {
+  items: ["Carregando dados..."],
+  index: 0
+};
+
+render();
+
+/* relógio */
+setInterval(() => {
+  clockEl.innerText = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}, 1000);
+
+/* fetch seguro */
+async function safeFetch(url) {
+  try {
+    const r = await fetch(url);
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+
+/* dados */
+async function loadData() {
+  const cities = ["Sao Paulo", "Rio de Janeiro", "Belo Horizonte"];
+
+  const weather = await Promise.all(
+    cities.map(c =>
+      safeFetch(`https://api.openweathermap.org/data/2.5/weather?q=${c},BR&units=metric&appid=${API_KEY}&lang=pt_br`)
+    )
+  );
+
+  const crypto = await safeFetch(
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=brl"
+  );
+
+  const usd = await safeFetch(
+    "https://economia.awesomeapi.com.br/json/last/USD-BRL"
+  );
+
+  const weatherItems = weather
+    .filter(w => w && w.main)
+    .map(w => `🌦 ${w.name} • ${Math.round(w.main.temp)}°C`);
+
+  const items = [
+    ...weatherItems,
+    crypto?.bitcoin ? `💰 BTC • R$ ${crypto.bitcoin.brl.toLocaleString()}` : null,
+    crypto?.ethereum ? `🟣 ETH • R$ ${crypto.ethereum.brl.toLocaleString()}` : null,
+    usd?.USDBRL ? `💵 USD • R$ ${parseFloat(usd.USDBRL.bid).toFixed(2)}` : null
+  ].filter(Boolean);
+
+  if (items.length) {
+    state.items = items;
+    render();
+  }
+}
+
+/* render */
+function render() {
+  ticker.innerHTML = state.items.map((t,i)=>
+    `<div class="item ${i===0?"active":""}">${t}</div>`
+  ).join("");
+}
+
+/* troca */
+setInterval(() => {
+  const all = document.querySelectorAll(".item");
+  if (!all.length) return;
+
+  all[state.index].classList.remove("active");
+  state.index = (state.index + 1) % all.length;
+  all[state.index].classList.add("active");
+
+}, 4000);
+
+/* init */
+loadData();
+setInterval(loadData, 1800000);
+
+</script>
+
+</body>
+</html>
