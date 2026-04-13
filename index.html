@@ -5,20 +5,22 @@
 <title>HUD Trading</title>
 
 <style>
-body {
+html, body {
   margin: 0;
-  background: #000;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
   font-family: "Segoe UI", sans-serif;
 }
 
 .hud {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
 }
 
+/* 🔥 GLASS DARK */
 .card {
-  width: 90%;
+  width: 100%;
   max-width: 900px;
   height: 70px;
 
@@ -27,15 +29,22 @@ body {
   padding: 0 20px;
 
   border-radius: 14px;
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(12px);
 
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(10,10,15,0.65); /* mais escuro */
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,0.12);
 
   position: relative;
   overflow: hidden;
+
+  box-shadow:
+    0 4px 25px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
+/* LED */
 .led-line {
   position: absolute;
   bottom: 0;
@@ -61,15 +70,27 @@ body {
   to   { background-position: 200% 0; }
 }
 
+/* TEXTO */
 .ticker {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: calc(100% - 160px);
+
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+
+  text-shadow:
+    0 0 6px rgba(0,0,0,0.8),
+    0 0 10px rgba(0,0,0,0.4);
 }
 
 .item {
   position: absolute;
   width: 100%;
-  color: #fff;
 
   opacity: 0;
   transform: translateX(20px);
@@ -81,12 +102,20 @@ body {
   transform: translateX(0);
 }
 
+/* RELÓGIO */
 .clock {
   position: absolute;
   right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+
   font-size: 20px;
   font-weight: 700;
   color: #ccc;
+
+  text-shadow:
+    0 0 6px rgba(0,0,0,0.8),
+    0 0 10px rgba(0,0,0,0.4);
 }
 </style>
 </head>
@@ -135,7 +164,6 @@ async function safeFetch(url) {
   }
 }
 
-/* 🔥 TRADUÇÃO MELHORADA */
 function formatWeatherDesc(desc) {
   const map = {
     "céu limpo": "Céu limpo",
@@ -184,12 +212,10 @@ async function loadData() {
 
   const items = [
     ...weatherItems,
-
     crypto?.bitcoin ? `💰 BTC • R$ ${crypto.bitcoin.brl.toLocaleString()}` : null,
     crypto?.ethereum ? `🟣 ETH • R$ ${crypto.ethereum.brl.toLocaleString()}` : null,
     usd?.USDBRL ? `💵 USD • R$ ${parseFloat(usd.USDBRL.bid).toFixed(2)}` : null,
     cny?.CNYBRL ? `🇨🇳 CNY • R$ ${parseFloat(cny.CNYBRL.bid).toFixed(2)}` : null
-
   ].filter(Boolean);
 
   if (items.length) {
